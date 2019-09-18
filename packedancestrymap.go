@@ -111,7 +111,7 @@ func ReadIndFile(path string) ([]Ind, error) {
 	return inds, nil
 }
 
-func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte, snps []Snp, inds []Ind) error) error {
+func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte, snp Snp, inds []Ind) error) error {
 	ok, err := Calcishash(genoPath, indPath, snpPath)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 			genoRow[indIndex] = genotype
 		}
 
-		err = processFunc(genoRow, snps, inds)
+		err = processFunc(genoRow, snps[snpIndex], inds)
 		if err != nil {
 			return nil
 		}
