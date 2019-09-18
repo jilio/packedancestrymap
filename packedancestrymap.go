@@ -50,14 +50,6 @@ func ReadSnpFile(path string) ([]Snp, error) {
 	}
 	defer file.Close()
 
-	m := map[string]uint8{
-		"A": 0,
-		"C": 1,
-		"G": 2,
-		"T": 3,
-		"X": 4,
-	}
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		fields := strings.Fields(strings.Trim(scanner.Text(), " "))
@@ -81,8 +73,8 @@ func ReadSnpFile(path string) ([]Snp, error) {
 			Chromosome:  uint8(chr),
 			GeneticPos:  float32(gpos),
 			PhysicalPos: uint32(ppos),
-			Ref:         m[fields[4]],
-			Alt:         m[fields[5]],
+			Ref:         byte(fields[4][0]),
+			Alt:         byte(fields[5][0]),
 		})
 	}
 	if err := scanner.Err(); err != nil {
@@ -119,7 +111,7 @@ func ReadIndFile(path string) ([]Ind, error) {
 	return inds, nil
 }
 
-func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte) error) error {
+func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte, snps []Snp, inds []Ind) error) error {
 	ok, err := Calcishash(genoPath, indPath, snpPath)
 	if err != nil {
 		return err
@@ -170,7 +162,7 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 			genoRow[indIndex] = genotype
 		}
 
-		err = processFunc(genoRow)
+		err = processFunc(genoRow, snps, inds)
 		if err != nil {
 			return nil
 		}
