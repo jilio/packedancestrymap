@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Snp from *.snp file
@@ -111,7 +112,7 @@ func ReadIndFile(path string) ([]Ind, error) {
 	return inds, nil
 }
 
-func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte, snp Snp, inds []Ind) error) error {
+func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow []byte, snp Snp, inds []Ind)) error {
 	ok, err := Calcishash(genoPath, indPath, snpPath)
 	if err != nil {
 		return err
@@ -150,6 +151,7 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 	rchunk := make([]byte, genoChunkSize)
 	genoReader.Read(rchunk)
 
+	wg := &sync.WaitGroup{}
 	for snpIndex := 0; snpIndex < len(snps); snpIndex++ {
 		genoReader.Read(rchunk)
 
@@ -162,11 +164,14 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 			genoRow[indIndex] = genotype
 		}
 
-		err = processFunc(genoRow, snps[snpIndex], inds)
-		if err != nil {
-			return nil
-		}
+		wg.Add(1)
+		go func(genoRow []byte, snp Snp, inds []Ind, wg *sync.WaitGroup) {
+			processFunc(genoRow, snp, inds)
+			wg.Done()
+		}(genoRow, snps[snpIndex], inds, wg)
+
 	}
+	wg.Wait()
 
 	return nil
 }
