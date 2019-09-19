@@ -152,6 +152,7 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 	genoReader.Read(rchunk)
 
 	wg := &sync.WaitGroup{}
+	quotaCh := make(chan struct{}, 50) // magic number
 	for snpIndex := 0; snpIndex < len(snps); snpIndex++ {
 		genoReader.Read(rchunk)
 
@@ -165,10 +166,13 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 		}
 
 		wg.Add(1)
-		go func(genoRow []byte, snp Snp, inds []Ind, wg *sync.WaitGroup) {
+		go func(genoRow []byte, snp Snp, inds []Ind, wg *sync.WaitGroup, quotaCh chan struct{}) {
+			quotaCh <- struct{}{}
+			defer wg.Done()
 			processFunc(genoRow, snp, inds)
-			wg.Done()
-		}(genoRow, snps[snpIndex], inds, wg)
+			<-quotaCh
+
+		}(genoRow, snps[snpIndex], inds, wg, quotaCh)
 
 	}
 	wg.Wait()
