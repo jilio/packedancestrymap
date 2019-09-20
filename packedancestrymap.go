@@ -159,7 +159,7 @@ func ProcessGenoRows(genoPath, indPath, snpPath string, processFunc func(genoRow
 		genoRow := make([]byte, len(inds))
 		for indIndex := 0; indIndex < len(inds); indIndex++ {
 			byteOffset := int(math.Floor(float64(indIndex) / 4))
-			bitOffset := uint8(indIndex%4) * 2
+			bitOffset := uint8(6) - uint8(indIndex%4)*2
 			b := rchunk[byteOffset]
 			genotype := (b >> bitOffset) & 3
 			genoRow[indIndex] = genotype
